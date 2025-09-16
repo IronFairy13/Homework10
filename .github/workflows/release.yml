@@ -1,0 +1,86 @@
+name: C++ CI (Conan)
+
+on:
+  push:
+    branches:
+      - master
+      - feature/github_actions
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install system requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake python3-pip python3-venv build-essential
+
+      - name: Install pipx
+        run: |
+          sudo apt-get install -y pipx
+          pipx ensurepath
+
+      - name: Install Conan
+        run: pipx install conan
+
+      - name: Detect Conan profile
+        run: conan profile detect --force
+
+      - name: Conan install
+        run: conan install . --output-folder=build --build=missing
+
+      - name: Configure with CMake
+        run: cmake -B build \
+          -DPROJECT_VERSION_PATCH=${{ github.run_number }} \
+          -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=Release
+
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package (.deb)
+        run: cmake --build build --target package
+
+      - name: List build dir
+        run: ls -lh build
+
+      - name: Find generated .deb
+        id: find_deb
+        run: |
+          # Ищем пакет, собранный CPack для нового имени пакета "async"
+          DEB_PATH=$(find build -maxdepth 1 -name "async-0.1.*.deb" | head -n1)
+          DEB_FILE=$(basename "$DEB_PATH")
+          echo "deb_path=$DEB_PATH" >> $GITHUB_OUTPUT
+          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload .deb to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_deb.outputs.deb_path }}
+          asset_name: ${{ steps.find_deb.outputs.deb_file }}
+          asset_content_type: application/vnd.debian.binary-package
