@@ -2,7 +2,7 @@
 /build/
 .vscode/
 
-# runtime logs
+
 /log/
 
 

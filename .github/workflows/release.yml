@@ -23,7 +23,8 @@ jobs:
       - name: Install system requirements
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake python3-pip python3-venv build-essential
+          # Компилятор, CMake, Python для Conan и заголовки Boost (asio)
+          sudo apt-get install -y cmake python3-pip python3-venv build-essential libboost-dev
 
       - name: Install pipx
         run: |
@@ -40,7 +41,7 @@ jobs:
         run: conan install . --output-folder=build --build=missing
 
       - name: Configure with CMake
-        run: cmake -B build \
+        run: cmake -S . -B build \
           -DPROJECT_VERSION_PATCH=${{ github.run_number }} \
           -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=Release
@@ -53,7 +54,9 @@ jobs:
         run: cmake --build build --target package
 
       - name: List build dir
-        run: ls -lh build
+        run: |
+          ls -lh build
+          ls -lh build/_CPack_Packages/*/* || true
 
       - name: Find generated .deb
         id: find_deb

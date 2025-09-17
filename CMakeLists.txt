@@ -26,6 +26,10 @@ add_executable(bulk source/main.cpp)
 target_link_libraries(bulk PRIVATE async)
 install(TARGETS bulk RUNTIME DESTINATION bin)
 
+add_executable(bulk_server source/server.cpp)
+target_link_libraries(bulk_server PRIVATE async Threads::Threads)
+install(TARGETS bulk_server RUNTIME DESTINATION bin)
+
 set(CPACK_GENERATOR "DEB")
 set(CPACK_PACKAGE_NAME "async")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
@@ -34,7 +38,6 @@ set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Savchenko")
 
 include(CPack)
-
 
 
 
