@@ -179,11 +179,7 @@ namespace async
         ctx->buffer.clear();
       }
 
-      if (ctx->dyn_depth == 0)
-      {
-        global_static().flush();
-      }
-      else
+      if (ctx->dyn_depth != 0)
       {
         ctx->dyn_cmds.clear();
         ctx->dyn_depth = 0;
